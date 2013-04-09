@@ -1,6 +1,10 @@
 SwipeListView
 =============
 
+## Introduction
+
+This implementation of a swipeList is strongly based on 47 degrees LLC.
+https://github.com/47deg/android-swipelistview
 ## Dependencies
 
 SwipeListView depends on the following libraries.
