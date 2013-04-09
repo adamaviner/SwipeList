@@ -34,7 +34,7 @@ public class BaseSwipeListViewListener implements SwipeListViewListener {
     }
 
     @Override
-    public void onDismiss(int[] reverseSortedPositions) {
+    public void onDismiss(int position) {
 
     }
 

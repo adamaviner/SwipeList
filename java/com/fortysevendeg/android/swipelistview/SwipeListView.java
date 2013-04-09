@@ -96,8 +96,9 @@ public class SwipeListView extends ListView {
 
     /**
      * If you create a View programmatically you need send back and front identifier
-     * @param context Context
-     * @param swipeBackView Back Identifier
+     *
+     * @param context        Context
+     * @param swipeBackView  Back Identifier
      * @param swipeFrontView Front Identifier
      */
     public SwipeListView(Context context, int swipeBackView, int swipeFrontView) {
@@ -168,7 +169,7 @@ public class SwipeListView extends ListView {
     /**
      * Closes all open items, without requiring a touch event.
      */
-    public void closeOpenedItems(){
+    public void closeOpenedItems() {
         touchListener.closeOpenItem();
     }
 
@@ -176,10 +177,10 @@ public class SwipeListView extends ListView {
      * Find the view which is in the given position
      */
 
-   public View findViewByPosition(int position){
+    public View findViewByPosition(int position) {
         final int realPosition = position - this.getFirstVisiblePosition();
         return this.getChildAt(realPosition).findViewById(swipeFrontView);
-   }
+    }
 
     /**
      * Open ListView's item
@@ -202,19 +203,20 @@ public class SwipeListView extends ListView {
     /**
      * Notifies onDismiss
      *
-     * @param reverseSortedPositions All dismissed positions
+     * @param position All dismissed positions
      */
-    protected void onDismiss(int[] reverseSortedPositions) {
+    protected void onDismiss(int position) {
         if (swipeListViewListener != null) {
-            swipeListViewListener.onDismiss(reverseSortedPositions);
+            swipeListViewListener.onDismiss(position);
         }
     }
 
     /**
      * Start open item
+     *
      * @param position list item
-     * @param action current action
-     * @param right to right
+     * @param action   current action
+     * @param right    to right
      */
     protected void onStartOpen(int position, int action, boolean right) {
         if (swipeListViewListener != null) {
@@ -224,6 +226,7 @@ public class SwipeListView extends ListView {
 
     /**
      * Start close item
+     *
      * @param position list item
      * @param right
      */
