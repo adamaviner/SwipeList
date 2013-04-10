@@ -78,9 +78,10 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Constructor
-     * @param listView SwipeListView
+     *
+     * @param listView       SwipeListView
      * @param swipeFrontView front view Identifier
-     * @param swipeBackView back view Identifier
+     * @param swipeBackView  back view Identifier
      */
     public SwipeListViewTouchListener(SwipeListView listView, int swipeFrontView, int swipeBackView) {
         this.swipeFrontView = swipeFrontView;
@@ -97,6 +98,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Sets current item's parent view
+     *
      * @param parentView Parent view
      */
     private void setParentView(View parentView) {
@@ -105,6 +107,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Sets current item's front view
+     *
      * @param frontView Front view
      */
     private void setFrontView(View frontView) {
@@ -128,6 +131,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Set current item's back view
+     *
      * @param backView
      */
     private void setBackView(View backView) {
@@ -155,6 +159,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Open item
+     *
      * @param position Position of list
      */
     protected void openAnimate(int position) {
@@ -163,6 +168,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Close item
+     *
      * @param position Position of list
      */
     protected void closeAnimate(int position) {
@@ -181,7 +187,8 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Open item
-     * @param view affected view
+     *
+     * @param view     affected view
      * @param position Position of list
      */
     private void openAnimate(View view, int position) {
@@ -192,7 +199,8 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Close item
-     * @param view affected view
+     *
+     * @param view     affected view
      * @param position Position of list
      */
     private void closeAnimate(View view, int position) {
@@ -203,15 +211,15 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Create animation
-     * @param view affected view
-     * @param swap If state should change. If "false" returns to the original position
+     *
+     * @param view      affected view
+     * @param swap      If state should change. If "false" returns to the original position
      * @param swapRight If swap is true, this parameter tells if move is to the right or left
-     * @param position Position of list
+     * @param position  Position of list
      */
     private void chooseAnimation(final View view, final boolean swap, final boolean swapRight, final int position) {
         ListItem newItem = new ListItem(position);
-        if (lastItem.getPosition() == position)
-            newItem = lastItem;
+        if (lastItem.getPosition() == position) newItem = lastItem;
 
         if (swipeCurrentAction == SwipeListView.SWIPE_ACTION_REVEAL) {
             animateReveal(view, swap, swapRight, newItem);
@@ -220,7 +228,9 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
 
     private void animateCrush(final ListItem openItem) {
-        final View view = (View) findFrontViewByPosition(openItem.getPosition()).getParent();
+        final View frontView = findFrontViewByPosition(openItem.getPosition());
+        final View backView = findBackViewByPosition(openItem.getPosition());
+        final View view = (View) frontView.getParent();
         final ViewGroup.LayoutParams lp = view.getLayoutParams();
         final int originalHeight = view.getHeight();
 
@@ -236,31 +246,47 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                view.setVisibility(View.GONE);
+                listView.onDismiss(openItem.getPosition());
+                listView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        frontView.setX(0f);
+                        lp.height = originalHeight;
+                        backView.setAlpha(1f);
+                        view.setVisibility(View.VISIBLE);
+//                        resetItem(openItem.getPosition());
+                        openItem.close();
+                    }
+                });
             }
         });
+
         animator.start();
-        openItem.close();
+    }
+
+    private void resetItem(final int position) {
+        if (lastItem.getPosition() != position) return;
+
     }
 
 
-
-        /**
-         * Create reveal animation
-         * @param view affected view
-         * @param swap If will change state. If "false" returns to the original position
-         * @param swapRight If swap is true, this parameter tells if movement is toward right or left
-         * @param item the item we wish to act upon
-         */
+    /**
+     * Create reveal animation
+     *
+     * @param view      affected view
+     * @param swap      If will change state. If "false" returns to the original position
+     * @param swapRight If swap is true, this parameter tells if movement is toward right or left
+     * @param item      the item we wish to act upon
+     */
     private void animateReveal(final View view, final boolean swap, final boolean swapRight, final ListItem item) {
 
         int moveTo = calcSwipeTranslationX(swap, swapRight, item.getPosition());
 
         ArrayList<Animator> animators = new ArrayList<Animator>();
-        animators.add(ObjectAnimator.ofFloat(view, "translationX",view.getX() , moveTo));
+        animators.add(ObjectAnimator.ofFloat(view, "translationX", view.getX(), moveTo));
 
         final boolean isLastItemOpenAndNotMe = item.getPosition() != lastItem.getPosition() && lastItem.isOpen();
-        if (isLastItemOpenAndNotMe){
+        if (isLastItemOpenAndNotMe) {
             View openView = findBackViewByPosition(lastItem.getPosition());      // we play with it's alpha.
             animators.add(ObjectAnimator.ofFloat(openView, "alpha", openView.getAlpha(), calculateAlpha((float) moveTo)));
         }
@@ -273,22 +299,22 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
             public void onAnimationEnd(Animator animation) {
                 listView.resetScrolling();
                 if (swap) {
-                    if (!item.isOpen()) { //then open item
+                    if (item.isOpen()) {
+                        listView.onClosed(item.getPosition(), item.wasSwipedRight());
+                        item.close();
+                    } else {
                         listView.onOpened(item.getPosition(), swapRight);
                         if (swapRight) item.swipeRight();
                         else item.swipeLeft();
-                    } else {
-                        listView.onClosed(item.getPosition(), item.wasSwipedRight());
-                        item.close();
                     }
-                    if (isLastItemOpenAndNotMe)
-                        animateCrush(lastItem);
+                    if (isLastItemOpenAndNotMe) animateCrush(lastItem);
                     lastItem = item;
                 }
             }
         });
         set.start();
     }
+
 
     private int calcSwipeTranslationX(final boolean swap, final boolean swapRight, final int position) {
         int moveTo = 0;
@@ -310,6 +336,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Set enabled
+     *
      * @param enabled
      */
     public void setEnabled(boolean enabled) {
@@ -318,6 +345,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Return ScrollListener for ListView
+     *
      * @return OnScrollListener
      */
     public AbsListView.OnScrollListener makeScrollListener() {
@@ -351,9 +379,8 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     /**
      * dismisses last opened item.
      */
-    public void crushOpenItem(){
-        if (!lastItem.isOpen())
-            return;
+    public void crushOpenItem() {
+        if (!lastItem.isOpen()) return;
         animateCrush(lastItem);
     }
 
@@ -361,8 +388,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
      * Close last opened item if still open, otherwise does nothing.
      */
     public void closeOpenItem() {
-        if (!lastItem.isOpen())
-            return;
+        if (!lastItem.isOpen()) return;
         View view = findFrontViewByPosition(lastItem.getPosition());
         animateReveal(view, true, lastItem.wasSwipedLeft(), lastItem);
         lastItem.close();
@@ -423,8 +449,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
                 velocityTracker.addMovement(motionEvent);
                 velocityTracker.computeCurrentVelocity(1000);
                 float velocityX = Math.abs(velocityTracker.getXVelocity());
-                if (!isOpen(downPosition))
-                    velocityX = 0;
+                if (!isOpen(downPosition)) velocityX = 0;
 
                 float velocityY = Math.abs(velocityTracker.getYVelocity());
                 boolean swap = false;
@@ -484,9 +509,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
                     }
                     listView.requestDisallowInterceptTouchEvent(true);
                     MotionEvent cancelEvent = MotionEvent.obtain(motionEvent);
-                    cancelEvent.setAction(MotionEvent.ACTION_CANCEL |
-                            (motionEvent.getActionIndex()
-                                    << MotionEvent.ACTION_POINTER_INDEX_SHIFT));
+                    cancelEvent.setAction(MotionEvent.ACTION_CANCEL | (motionEvent.getActionIndex() << MotionEvent.ACTION_POINTER_INDEX_SHIFT));
                     listView.onTouchEvent(cancelEvent);
                 }
 
@@ -504,29 +527,27 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     }
 
     private boolean wasSwipedRight(final int position) {
-        if (lastItem.getPosition() == position)
-            return lastItem.wasSwipedRight();
+        if (lastItem.getPosition() == position) return lastItem.wasSwipedRight();
         return false;
     }
 
     private boolean isOpen(final int position) {
-        if (lastItem.getPosition() == position)
-            return lastItem.isOpen();
+        if (lastItem.getPosition() == position) return lastItem.isOpen();
         return false;
     }
 
     /**
      * Moves the view
+     *
      * @param deltaX delta
      */
     public void move(float deltaX) {
         listView.onMove(downPosition, deltaX);
         if (swipeCurrentAction == SwipeListView.SWIPE_ACTION_DISMISS) {
             setTranslationX(parentView, deltaX);
-            setAlpha(parentView, Math.max(0f, Math.min(1f,
-                    1f - 2f * Math.abs(deltaX) / viewWidth)));
+            setAlpha(parentView, Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / viewWidth)));
         } else {
-            if(downPosition != lastItem.getPosition() && lastItem.isOpen()){
+            if (downPosition != lastItem.getPosition() && lastItem.isOpen()) {
                 setAlpha(findBackViewByPosition(lastItem.getPosition()), calculateAlpha(deltaX));
             }
             setTranslationX(frontView, deltaX);
