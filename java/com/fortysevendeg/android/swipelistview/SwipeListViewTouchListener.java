@@ -356,7 +356,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     /**
      * Set enabled
      *
-     * @param enabled
+     * @param enabled is the view enabled
      */
     public void setEnabled(boolean enabled) {
         paused = !enabled;
@@ -476,8 +476,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
                 if (minFlingVelocity <= velocityX && velocityX <= maxFlingVelocity && velocityY < velocityX) {
                     swapRight = velocityTracker.getXVelocity() > 0;
                     if (isOpen(downPosition) && wasSwipedRight(downPosition) && swapRight) {
-                        //chooseAnimation(backView, true, swapRight, downPosition);
-                        swap = false; //TODO should dismiss undo.
+                        swap = false;
                     } else if (isOpen(downPosition) && !wasSwipedRight(downPosition) && !swapRight) {
                         swap = false; //here as well
                     } else {
@@ -546,13 +545,11 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     }
 
     private boolean wasSwipedRight(final int position) {
-        if (lastItem.getPosition() == position) return lastItem.wasSwipedRight();
-        return false;
+        return lastItem.getPosition() == position && lastItem.wasSwipedRight();
     }
 
     private boolean isOpen(final int position) {
-        if (lastItem.getPosition() == position) return lastItem.isOpen();
-        return false;
+        return lastItem.getPosition() == position && lastItem.isOpen();
     }
 
     /**
