@@ -132,7 +132,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     /**
      * Set current item's back view
      *
-     * @param backView
+     * @param backView Back view
      */
     private void setBackView(View backView) {
         this.backView = backView;
@@ -226,8 +226,18 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
         }
     }
 
-
     private void animateCrush(final ListItem openItem) {
+        animateCrush(openItem, null);
+    }
+
+    /**
+     * Actually dismisses the openItem, leaving the view of the position normal.
+     * or if there is another item open, it leaves it open where openItem used to be
+     *
+     * @param openItem - the item that will be dismissed
+     * @param newItem  - item to replace openItem, null if no such object.
+     */
+    private void animateCrush(final ListItem openItem, final ListItem newItem) {
         final View frontView = findFrontViewByPosition(openItem.getPosition());
         final View backView = findBackViewByPosition(openItem.getPosition());
         final View view = (View) frontView.getParent();
@@ -250,25 +260,34 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
                 listView.post(new Runnable() {
                     @Override
                     public void run() {
-                        frontView.setX(0f);
                         lp.height = originalHeight;
-                        backView.setAlpha(1f);
-                        view.setVisibility(View.VISIBLE);
-//                        resetItem(openItem.getPosition());
+                        fixLastView();
+                        fixNewView();
                         openItem.close();
+                    }
+
+                    private void fixNewView() {
+                        if (newItem == null) return;
+                        int position = newItem.getPosition();
+                        final View front = findFrontViewByPosition(position);
+                        newItem.setPosition(--position);
+                        final View newFront = findFrontViewByPosition(position);
+                        final float openX = front.getX();
+                        if (position < openItem.getPosition()) return;
+
+                        front.setX(0f);
+                        newFront.setX(openX);
+                    }
+
+                    private void fixLastView() {
+                        backView.setAlpha(1f);
+                        frontView.setX(0f);
                     }
                 });
             }
         });
-
         animator.start();
     }
-
-    private void resetItem(final int position) {
-        if (lastItem.getPosition() != position) return;
-
-    }
-
 
     /**
      * Create reveal animation
@@ -307,7 +326,7 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
                         if (swapRight) item.swipeRight();
                         else item.swipeLeft();
                     }
-                    if (isLastItemOpenAndNotMe) animateCrush(lastItem);
+                    if (isLastItemOpenAndNotMe) animateCrush(lastItem, item);
                     lastItem = item;
                 }
             }
