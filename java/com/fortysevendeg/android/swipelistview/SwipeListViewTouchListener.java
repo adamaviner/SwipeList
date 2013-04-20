@@ -231,15 +231,15 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
     }
 
     /**
-     * Actually dismisses the openItem, leaving the view of the position normal.
-     * or if there is another item open, it leaves it open where openItem used to be
+     * Actually dismisses the oldItem, leaving the view of the position normal.
+     * or if there is another item open, it leaves it open where oldItem used to be
      *
-     * @param openItem - the item that will be dismissed
-     * @param newItem  - item to replace openItem, null if no such object.
+     * @param oldItem - the item that will be dismissed
+     * @param newItem - item to replace oldItem, null if no such object.
      */
-    private void animateCrush(final ListItem openItem, final ListItem newItem) {
-        final View frontView = findFrontViewByPosition(openItem.getPosition());
-        final View backView = findBackViewByPosition(openItem.getPosition());
+    private void animateCrush(final ListItem oldItem, final ListItem newItem) {
+        final View frontView = findFrontViewByPosition(oldItem.getPosition());
+        final View backView = findBackViewByPosition(oldItem.getPosition());
         final View view = (View) frontView.getParent();
         final ViewGroup.LayoutParams lp = view.getLayoutParams();
         final int originalHeight = view.getHeight();
@@ -253,40 +253,65 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
             }
         });
 
+        markFixNewView(newItem, oldItem);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                listView.onDismiss(openItem.getPosition());
+                listView.onDismiss(oldItem.getPosition());
                 listView.post(new Runnable() {
                     @Override
                     public void run() {
                         lp.height = originalHeight;
-                        fixLastView();
-                        fixNewView();
-                        openItem.close();
-                    }
-
-                    private void fixNewView() {
-                        if (newItem == null) return;
-                        int position = newItem.getPosition();
-                        final View front = findFrontViewByPosition(position);
-                        newItem.setPosition(--position);
-                        final View newFront = findFrontViewByPosition(position);
-                        final float openX = front.getX();
-                        if (position < openItem.getPosition()) return;
-
-                        front.setX(0f);
-                        newFront.setX(openX);
-                    }
-
-                    private void fixLastView() {
-                        backView.setAlpha(1f);
-                        frontView.setX(0f);
+                        if (newItem != null) newItem.setPosition(newItem.getPosition() - 1);
+                        oldItem.close();
                     }
                 });
             }
         });
         animator.start();
+    }
+
+    private void markFixNewView(final ListItem newItem, final ListItem oldItem) {
+        if (newItem == null) return;
+        // Old view
+        final int oldItemPosition = oldItem.getPosition();
+        final View oldFront = findFrontViewByPosition(oldItemPosition);
+        final View oldBack = findBackViewByPosition(oldItemPosition);
+        final PreDrawableFrameLayout oldView = (PreDrawableFrameLayout) oldFront.getParent();
+        oldView.preDraw(new Command() {
+            @Override
+            public void execute() {
+                oldBack.setAlpha(1f);
+                oldFront.setX(0f);
+            }
+        });
+
+        // Current view
+        int newItemPosition = newItem.getPosition();
+        final View front = findFrontViewByPosition(newItemPosition);
+        final float openX = front.getX();
+
+        // Previous view
+        final int newPosition = newItemPosition - 1;
+        final View newFront = findFrontViewByPosition(newPosition);
+        if (newPosition < oldItemPosition) return;
+
+        // Get tag
+        PreDrawableFrameLayout view = (PreDrawableFrameLayout) front.getParent();
+        view.preDraw(new Command() {
+            @Override
+            public void execute() {
+                front.setX(0f);
+            }
+        });
+
+        PreDrawableFrameLayout newView = (PreDrawableFrameLayout) newFront.getParent();
+        newView.preDraw(new Command() {
+            @Override
+            public void execute() {
+                newFront.setX(openX);
+            }
+        });
     }
 
     /**
@@ -373,7 +398,6 @@ public class SwipeListViewTouchListener implements View.OnTouchListener {
             public void onScrollStateChanged(AbsListView absListView, int scrollState) {
                 setEnabled(scrollState != AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
                 if (scrollState == SCROLL_STATE_TOUCH_SCROLL) {
-//                    dismissOpenItem();
                     crushOpenItem();
                     listViewMoving = true;
                     setEnabled(false);
