@@ -6,6 +6,7 @@ package com.fortysevendeg.android.swipelistview;
 public class ListItem {
     private int position;
     private SwipeDirection swipeDirection;
+
     private enum SwipeDirection {LEFT, RIGHT, CLOSED}
 
 
@@ -22,27 +23,27 @@ public class ListItem {
         this.position = position;
     }
 
-    public boolean wasSwipedRight(){
+    public boolean wasSwipedRight() {
         return swipeDirection == SwipeDirection.RIGHT;
     }
 
-    public boolean wasSwipedLeft(){
+    public boolean wasSwipedLeft() {
         return swipeDirection == SwipeDirection.LEFT;
     }
 
-    public void swipeRight(){
+    public void swipeRight() {
         this.swipeDirection = SwipeDirection.RIGHT;
     }
 
-    public void swipeLeft(){
+    public void swipeLeft() {
         this.swipeDirection = SwipeDirection.LEFT;
     }
 
-    public void close(){
+    public void close() {
         this.swipeDirection = SwipeDirection.CLOSED;
     }
 
-    public boolean isOpen(){
+    public boolean isOpen() {
         return swipeDirection != SwipeDirection.CLOSED;
     }
 
